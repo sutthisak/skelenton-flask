@@ -4,6 +4,16 @@ from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
 
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=['200 per day', '50 per hour']
+)
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return jsonify({'message': f'ERROR: Ratelimit exceeded {e.description}'}), 429
+
 def get_header_data(header_name):
     if header_name in request.headers:
         return request.headers[header_name]
@@ -17,6 +27,7 @@ def check_authorization(api_key):
         return False
 
 @app.route('/', methods=['GET', 'POST'])
+@limiter.limit('2 per minute')
 def default():
     if(check_authorization(get_header_data('X-Api-Token')) == False):
         return jsonify({'message': 'ERROR: Unauthorized'}), 401
