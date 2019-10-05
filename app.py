@@ -8,8 +8,8 @@ def get_header_data(header_name):
     else:
         return None
 
-def check_authorization(api_token):
-    if api_token == '1234567890':   # Todo : Check api_token implementation
+def check_authorization(api_key):
+    if api_key == '1234567890':   # Todo : Check api_token implementation
         return True
     else:
         return False
