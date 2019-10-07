@@ -27,12 +27,19 @@ def check_authorization(api_key):
     else:
         return False
 
-@app.route('/', methods=['GET', 'POST'])
-@limiter.limit('2 per minute')
-def default():
-    if(check_authorization(get_header_data('X-Api-Token')) == False):
-        return jsonify({'message': 'ERROR: Unauthorized'}), 401
+def api_token_require(func, *args, **kwargs):
+    def wrapperFunc(*args, **kwargs):
+        if(check_authorization(get_header_data('X-Api-Token')) == False):
+            return jsonify({'message': 'ERROR: Unauthorized'}), 401
+        else:
+            returnValue = func(*args, **kwargs)
+            return returnValue
+    return wrapperFunc
 
+@app.route('/', methods=['GET', 'POST'])
+@limiter.limit('10 per minute')
+@api_token_require
+def default():
     if request.method == 'POST':        
         return jsonify({'message': 'OK POST: Authorized'}), 200
     else:
