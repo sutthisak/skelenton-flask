@@ -2,6 +2,8 @@ from flask import (Flask, request, jsonify)
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
+import time
+
 app = Flask(__name__)
 
 limiter = Limiter(
@@ -14,6 +16,15 @@ limiter = Limiter(
 @app.errorhandler(429)
 def ratelimit_handler(e):
     return jsonify({'message': f'ERROR: Ratelimit exceeded {e.description}'}), 429
+
+def logtime(func, *args, **kwargs):
+    def wrapperFunc(*args, **kwargs):
+        begin = time.time()
+        returnValue = func(*args, **kwargs)
+        end = time.time()        
+        app.logger.info(f'Total time taken in function "{func.__name__}" : {end - begin}')
+        return returnValue
+    return wrapperFunc
 
 def get_header_data(header_name):
     if header_name in request.headers:
@@ -39,7 +50,8 @@ def api_token_require(func, *args, **kwargs):
 @app.route('/', methods=['GET', 'POST'])
 @limiter.limit('10 per minute')
 @api_token_require
-def default():
+@logtime
+def default_route():
     if request.method == 'POST':        
         return jsonify({'message': 'OK POST: Authorized'}), 200
     else:
